@@ -31,15 +31,20 @@ export default {
   <div id="app">
     <latern></latern>
 
-    <a-input placeholder="请输入任务" class="my_ipt" />
-    <a-button type="primary">添加事项</a-button>
+    <a-input
+      placeholder="请输入任务"
+      class="my_ipt"
+      :value="inputValue"
+      @change="handleInputChange"
+    />
+    <a-button type="primary" @click="addItemToList">添加事项</a-button>
 
-    <a-list bordered :dataSource="list" class="dt_list">
+    <a-list bordered :dataSource="listData" class="dt_list">
       <a-list-item slot="renderItem" slot-scope="item">
         <!-- 复选框 -->
-        <a-checkbox>{{ item.info }}</a-checkbox>
+        <a-checkbox :checked="item.done">{{ item.info }}</a-checkbox>
         <!-- 删除链接 -->
-        <a slot="actions">删除</a>
+        <a slot="actions" @click="removeItemById(item.id)">删除</a>
       </a-list-item>
 
       <!-- footer区域 -->
@@ -61,26 +66,36 @@ export default {
 
 <script>
 import Latern from './components/Latern.vue';
+import { mapState } from 'vuex';
 export default {
   name: 'app',
   data() {
     return {
-      list: [
-        {
-          id: 0,
-          info: 'Racing car sprays burning fuel into crowd.',
-          done: false,
-        },
-        { id: 1, info: 'Japanese princess to wed commoner.', done: false },
-        {
-          id: 2,
-          info: 'Australian walks 100km after outback crash.',
-          done: false,
-        },
-        { id: 3, info: 'Man charged over missing wedding girl.', done: false },
-        { id: 4, info: 'Los Angeles battles huge wildfires.', done: false },
-      ],
+      list: [],
     };
+  },
+  created() {
+    this.$store.dispatch('getListData');
+  },
+  computed: {
+    // 将vuex的数据通过计算属性绑定到input的value属性身上
+    ...mapState(['listData', 'inputValue']),
+  },
+  methods: {
+    // 通过方法用input的值改变state的值
+    handleInputChange(e) {
+      this.$store.commit('setInputValue', e.target.value);
+    },
+    // 向列表添加新的一项
+    addItemToList() {
+      if (this.inputValue.trim().length <= 0)
+        return this.$message.warning('您输入的内容不能为空！');
+      this.$store.commit('addItem');
+    },
+    // 根据id删除某一项
+    removeItemById(id) {
+      this.$store.commit('removeItem', id);
+    },
   },
   components: {
     Latern,
