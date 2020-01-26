@@ -39,10 +39,24 @@ export default {
     />
     <a-button type="primary" @click="addItemToList">添加事项</a-button>
 
-    <a-list bordered :dataSource="listData" class="dt_list">
+    <a-list bordered :dataSource="requireListData" class="dt_list">
       <a-list-item slot="renderItem" slot-scope="item">
         <!-- 复选框 -->
-        <a-checkbox :checked="item.done">{{ item.info }}</a-checkbox>
+        <!-- 这种写法可以但是没法传id -->
+        <!-- <a-checkbox
+          :checked="item.done"
+          @change="callbackStatusChange(item.id)"
+        > -->
+        <a-checkbox
+          :checked="item.done"
+          @change="
+            e => {
+              callbackStatusChange(e, item.id);
+            }
+          "
+        >
+          {{ item.info }}</a-checkbox
+        >
         <!-- 删除链接 -->
         <a slot="actions" @click="removeItemById(item.id)">删除</a>
       </a-list-item>
@@ -50,15 +64,27 @@ export default {
       <!-- footer区域 -->
       <div slot="footer" class="footer">
         <!-- 未完成的任务个数 -->
-        <span>0条剩余</span>
+        <span>{{ undoneFinishLength }}条剩余</span>
         <!-- 操作按钮 -->
         <a-button-group>
-          <a-button type="primary">全部</a-button>
-          <a-button>未完成</a-button>
-          <a-button>已完成</a-button>
+          <a-button
+            :type="buttonGroupKey === 'all' ? 'primary' : 'default'"
+            @click="changeButtonGroup('all')"
+            >全部</a-button
+          >
+          <a-button
+            :type="buttonGroupKey === 'undone' ? 'primary' : 'default'"
+            @click="changeButtonGroup('undone')"
+            >未完成</a-button
+          >
+          <a-button
+            :type="buttonGroupKey === 'done' ? 'primary' : 'default'"
+            @click="changeButtonGroup('done')"
+            >已完成</a-button
+          >
         </a-button-group>
         <!-- 把已经完成的任务清空 -->
-        <a>清除已完成</a>
+        <a @click="removeDoneClick">清除已完成</a>
       </div>
     </a-list>
   </div>
@@ -66,7 +92,7 @@ export default {
 
 <script>
 import Latern from './components/Latern.vue';
-import { mapState } from 'vuex';
+import { mapState, mapGetters } from 'vuex';
 export default {
   name: 'app',
   data() {
@@ -79,7 +105,10 @@ export default {
   },
   computed: {
     // 将vuex的数据通过计算属性绑定到input的value属性身上
-    ...mapState(['listData', 'inputValue']),
+    // listData改用getters实现
+    // ...mapState(['listData', 'inputValue', 'buttonGroupKey']),
+    ...mapState(['inputValue', 'buttonGroupKey']),
+    ...mapGetters(['undoneFinishLength', 'requireListData']),
   },
   methods: {
     // 通过方法用input的值改变state的值
@@ -95,6 +124,22 @@ export default {
     // 根据id删除某一项
     removeItemById(id) {
       this.$store.commit('removeItem', id);
+    },
+    // 复选框回调函数，因为要传两个参数
+    callbackStatusChange(e, id) {
+      const newStatus = {
+        id: id,
+        status: e.target.checked,
+      };
+      this.$store.commit('changeStatus', newStatus);
+    },
+    // 清空已完成
+    removeDoneClick() {
+      this.$store.commit('removeDone');
+    },
+    // 点击全部，已完成，未完成
+    changeButtonGroup(key) {
+      this.$store.commit('storeChangeButtongroup', key);
     },
   },
   components: {
